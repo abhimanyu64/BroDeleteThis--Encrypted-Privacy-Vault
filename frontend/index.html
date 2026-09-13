@@ -1,0 +1,2473 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>BroDeleteThis</title>
+
+  <script src="https://cdn.tailwindcss.com">
+
+</script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Plus+Jakarta+Sans:wght@300;500;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+
+  <style>
+    * {
+      font-family: "Plus Jakarta Sans", sans-serif;
+      box-sizing: border-box;
+    }
+
+    .mono {
+      font-family: "Fira Code", monospace;
+    }
+
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .glass-panel {
+      background: rgba(13, 17, 23, 0.78);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+    }
+
+    .glass-input {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: all 0.3s ease;
+    }
+
+    .glass-input:focus {
+      border-color: #06b6d4;
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .neon-cyan {
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.4);
+    }
+
+    .drop-active {
+      border-color: #06b6d4 !important;
+      background: rgba(6, 182, 212, 0.08) !important;
+      transform: scale(1.01);
+    }
+
+    .hero-glow {
+      text-shadow:
+        0 0 20px rgba(6, 182, 212, 0.35),
+        0 0 50px rgba(99, 102, 241, 0.15);
+    }
+
+
+    /* =========================================
+       COOKEDDRIVE ANIMATIONS
+    ========================================= */
+
+    @keyframes pageIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes floatUp {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+
+    @keyframes glowPulse {
+      0%, 100% {
+        box-shadow: 0 0 18px rgba(6,182,212,.25);
+      }
+      50% {
+        box-shadow: 0 0 35px rgba(6,182,212,.55);
+      }
+    }
+
+    @keyframes textGlow {
+      0%, 100% {
+        text-shadow: 0 0 12px rgba(6,182,212,.25);
+      }
+      50% {
+        text-shadow: 0 0 28px rgba(6,182,212,.65);
+      }
+    }
+
+    @keyframes borderPulse {
+      0%, 100% {
+        border-color: rgba(255,255,255,.08);
+      }
+      50% {
+        border-color: rgba(6,182,212,.35);
+      }
+    }
+
+    @keyframes scanLine {
+      0% { transform: translateY(-100%); opacity: 0; }
+      15% { opacity: .8; }
+      85% { opacity: .8; }
+      100% { transform: translateY(100%); opacity: 0; }
+    }
+.error-shake {
+  animation: errorShake .45s ease;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  60% { transform: translateX(-7px); }
+  80% { transform: translateX(7px); }
+}
+    .page-animate {
+      animation: pageIn .8s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    header {
+      animation: pageIn .7s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    header .w-11 {
+      animation: glowPulse 2.5s ease-in-out infinite;
+    }
+
+    header .text-xl {
+      animation: textGlow 3s ease-in-out infinite;
+    }
+
+    #tab-enc,
+    #tab-dec {
+      transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+    }
+
+    #tab-enc:hover,
+    #tab-dec:hover {
+      transform: translateY(-2px);
+    }
+
+    #panel-encrypt,
+    #panel-decrypt {
+      animation: pageIn .8s .12s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    .glass-panel {
+      animation: borderPulse 4s ease-in-out infinite;
+      transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+    }
+
+    .glass-panel:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 25px 70px rgba(0,0,0,.72);
+    }
+
+    #drop-zone {
+      position: relative;
+      overflow: hidden;
+    }
+
+    #drop-zone::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -100%;
+      height: 2px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(6,182,212,.9),
+        transparent
+      );
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #drop-zone:hover::after {
+      animation: scanLine 2s linear infinite;
+    }
+
+    #drop-zone > div:first-of-type {
+      animation: floatUp 3s ease-in-out infinite;
+    }
+
+    .glass-input {
+      transform: translateZ(0);
+    }
+
+    .glass-input:focus {
+      transform: scale(1.01);
+    }
+
+    #btn-encrypt,
+    #btn-decrypt,
+    #btn-download-vault {
+      position: relative;
+      overflow: hidden;
+      transform: translateZ(0);
+      transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
+    }
+
+    #btn-encrypt:hover:not(:disabled),
+    #btn-decrypt:hover,
+    #btn-download-vault:hover {
+      transform: translateY(-3px);
+      filter: brightness(1.08);
+      box-shadow: 0 12px 30px rgba(6,182,212,.22);
+    }
+
+    #btn-encrypt:active:not(:disabled),
+    #btn-decrypt:active,
+    #btn-download-vault:active {
+      transform: translateY(0) scale(.98);
+    }
+
+    #btn-encrypt::before,
+    #btn-decrypt::before,
+    #btn-download-vault::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -120%;
+      width: 70%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,.22),
+        transparent
+      );
+      transform: skewX(-20deg);
+    }
+
+    #btn-encrypt:hover::before,
+    #btn-decrypt:hover::before,
+    #btn-download-vault:hover::before {
+      animation: buttonShine .75s ease;
+    }
+
+    @keyframes buttonShine {
+      from { left: -120%; }
+      to { left: 150%; }
+    }
+
+    #enc-result:not(.hidden) {
+      animation: successPop .6s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    #qrcode-box {
+      animation: floatUp 4s ease-in-out infinite;
+      transition: transform .3s ease, box-shadow .3s ease;
+    }
+
+    #qrcode-box:hover {
+      transform: scale(1.04) rotate(.5deg);
+      box-shadow: 0 20px 45px rgba(255,255,255,.16);
+    }
+
+    #display-key {
+      transition: all .3s ease;
+    }
+
+    #display-key:hover {
+      letter-spacing: .08em;
+      box-shadow: 0 0 20px rgba(6,182,212,.2);
+    }
+
+    main > .grid > .glass-panel {
+      animation: pageIn .7s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    main > .grid > .glass-panel:nth-child(1) { animation-delay: .18s; }
+    main > .grid > .glass-panel:nth-child(2) { animation-delay: .28s; }
+    main > .grid > .glass-panel:nth-child(3) { animation-delay: .38s; }
+
+    main > .grid > .glass-panel i {
+      transition: transform .3s ease;
+    }
+
+    main > .grid > .glass-panel:hover i {
+      transform: scale(1.18) rotate(-5deg);
+    }
+
+    footer {
+      animation: pageIn .8s .5s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    footer span {
+      box-shadow: 0 0 10px rgba(52,211,153,.55);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+
+
+    /* ===== SECRET KEY COPY MODAL ===== */
+    .copy-modal-backdrop{
+      position:fixed;
+      inset:0;
+      z-index:9999;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(2,7,18,.62);
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+      transition:opacity .28s ease, visibility .28s ease;
+    }
+
+    .copy-modal-backdrop.show{
+      opacity:1;
+      visibility:visible;
+      pointer-events:auto;
+    }
+
+    .copy-modal{
+      width:min(760px, 100%);
+      overflow:hidden;
+      border-radius:24px;
+      background:rgba(248,250,255,.97);
+      color:#0f172a;
+      border:1px solid rgba(255,255,255,.8);
+      box-shadow:
+        0 30px 90px rgba(0,0,0,.55),
+        0 0 45px rgba(59,130,246,.20);
+      transform:translateY(18px) scale(.94);
+      opacity:0;
+      transition:transform .45s cubic-bezier(.22,1,.36,1), opacity .35s ease;
+    }
+
+    .copy-modal-backdrop.show .copy-modal{
+      transform:translateY(0) scale(1);
+      opacity:1;
+    }
+
+    .copy-modal-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      min-height:86px;
+      padding:0 28px;
+      background:linear-gradient(135deg,rgba(238,242,255,.98),rgba(248,250,255,.98));
+      border-bottom:1px solid rgba(148,163,184,.18);
+    }
+
+    .copy-modal-title{
+      margin:0;
+      font-size:30px;
+      line-height:1;
+      font-weight:800;
+      letter-spacing:-.03em;
+    }
+
+    .copy-modal-close{
+      width:48px;
+      height:48px;
+      display:grid;
+      place-items:center;
+      border:0;
+      background:transparent;
+      color:#64748b;
+      border-radius:14px;
+      cursor:pointer;
+      transition:background .2s ease, color .2s ease, transform .2s ease;
+    }
+
+    .copy-modal-close:hover{
+      background:rgba(100,116,139,.10);
+      color:#334155;
+      transform:rotate(4deg) scale(1.04);
+    }
+
+    .copy-modal-body{
+      min-height:250px;
+      display:flex;
+      align-items:center;
+      gap:44px;
+      padding:36px 46px;
+      background:rgba(255,255,255,.96);
+    }
+
+    .copy-modal-icon{
+      position:relative;
+      flex:0 0 145px;
+      width:145px;
+      height:145px;
+      display:grid;
+      place-items:center;
+      border-radius:50%;
+      background:linear-gradient(145deg,#f8faff,#e9edff);
+      box-shadow:
+        inset 0 0 0 1px rgba(99,102,241,.06),
+        0 12px 28px rgba(30,41,59,.12);
+    }
+
+    .copy-modal-icon::before{
+      content:"";
+      position:absolute;
+      inset:-9px;
+      border:9px solid transparent;
+      border-top-color:#5b8df8;
+      border-right-color:#5b8df8;
+      border-radius:50%;
+      transform:rotate(-30deg);
+      animation:copyModalArc 1.8s ease-in-out infinite;
+    }
+
+    .copy-modal-icon::after{
+      content:"";
+      position:absolute;
+      inset:13px;
+      border-radius:50%;
+      border:1px solid rgba(99,102,241,.10);
+    }
+
+    .copy-modal-lock{
+      position:relative;
+      z-index:1;
+      width:58px;
+      height:58px;
+      border-radius:10px;
+      background:linear-gradient(145deg,#5b8df8,#4f46e5);
+      box-shadow:0 10px 25px rgba(79,70,229,.25);
+      display:grid;
+      place-items:center;
+    }
+
+    .copy-modal-lock::before{
+      content:"";
+      position:absolute;
+      width:30px;
+      height:25px;
+      top:-15px;
+      border:7px solid #5b8df8;
+      border-bottom:0;
+      border-radius:18px 18px 0 0;
+    }
+
+    .copy-modal-lock::after{
+      content:"";
+      width:7px;
+      height:17px;
+      border-radius:5px;
+      background:#fff;
+      box-shadow:0 4px 0 -1px rgba(255,255,255,.8);
+    }
+
+    .copy-modal-message{
+      flex:1;
+      font-size:22px;
+      line-height:1.45;
+      font-weight:600;
+      color:#111827;
+    }
+
+    .copy-modal-footer{
+      min-height:112px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      padding:18px 46px;
+      background:linear-gradient(135deg,#edf2ff,#f8faff);
+      border-top:1px solid rgba(148,163,184,.12);
+    }
+
+    .copy-modal-ok{
+      min-width:210px;
+      min-height:60px;
+      border:0;
+      border-radius:16px;
+      cursor:pointer;
+      color:#fff;
+      font-size:18px;
+      font-weight:800;
+      letter-spacing:.01em;
+      background:linear-gradient(100deg,#2877f4,#4f46e5);
+      box-shadow:0 12px 28px rgba(59,91,230,.28);
+      transition:transform .2s ease, filter .2s ease, box-shadow .2s ease;
+    }
+
+    .copy-modal-ok:hover{
+      transform:translateY(-2px);
+      filter:brightness(1.06);
+      box-shadow:0 16px 34px rgba(59,91,230,.35);
+    }
+
+    .copy-modal-ok:active{
+      transform:translateY(0) scale(.98);
+    }
+
+    @keyframes copyModalArc{
+      0%,100%{transform:rotate(-35deg);opacity:.82}
+      50%{transform:rotate(18deg);opacity:1}
+    }
+
+    @media (max-width:600px){
+      .copy-modal{
+        border-radius:20px;
+      }
+      .copy-modal-header{
+        min-height:70px;
+        padding:0 20px;
+      }
+      .copy-modal-title{
+        font-size:24px;
+      }
+      .copy-modal-body{
+        min-height:210px;
+        flex-direction:column;
+        justify-content:center;
+        gap:26px;
+        padding:30px 24px;
+        text-align:center;
+      }
+      .copy-modal-icon{
+        flex-basis:118px;
+        width:118px;
+        height:118px;
+      }
+      .copy-modal-message{
+        font-size:17px;
+      }
+      .copy-modal-footer{
+        min-height:92px;
+        padding:16px 24px;
+      }
+      .copy-modal-ok{
+        width:100%;
+        min-width:0;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+  
+/* ===== HIGH-LEVEL MOTION SYSTEM ===== */
+:root{
+  --mx:50%;
+  --my:50%;
+  --cursor-x:50vw;
+  --cursor-y:50vh;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+  background:
+    radial-gradient(420px circle at var(--mx) var(--my), rgba(34,211,238,.10), transparent 65%),
+    radial-gradient(300px circle at calc(100% - var(--mx)) calc(100% - var(--my)), rgba(99,102,241,.08), transparent 70%);
+  transition: background .15s ease-out;
+}
+
+main, header, footer{ position:relative; z-index:1; }
+
+.glass-panel, .feature-card{
+  transform-style:preserve-3d;
+  will-change:transform;
+  transition:
+    transform .55s cubic-bezier(.2,.8,.2,1),
+    box-shadow .45s ease,
+    border-color .35s ease,
+    background .35s ease;
+}
+
+.glass-panel::after, .feature-card::after{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(115deg, transparent 20%, rgba(255,255,255,.12) 48%, transparent 76%);
+  transform:translateX(-120%);
+  opacity:0;
+}
+
+.glass-panel:hover::after, .feature-card:hover::after{
+  opacity:1;
+  animation:sweep .9s ease forwards;
+}
+
+@keyframes sweep{
+  to{ transform:translateX(120%); }
+}
+
+.hero-orbit{
+  position:absolute;
+  width:420px;
+  height:420px;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  border:1px solid rgba(34,211,238,.10);
+  border-radius:50%;
+  pointer-events:none;
+  animation:orbitSpin 18s linear infinite;
+}
+
+.hero-orbit::before,.hero-orbit::after{
+  content:"";
+  position:absolute;
+  border-radius:50%;
+  border:1px dashed rgba(99,102,241,.16);
+}
+.hero-orbit::before{ inset:45px; animation:orbitSpin 11s linear infinite reverse; }
+.hero-orbit::after{ inset:100px; animation:orbitSpin 7s linear infinite; }
+
+@keyframes orbitSpin{ to{transform:rotate(360deg)} }
+
+.hero-pulse{
+  animation:heroBreath 4.5s ease-in-out infinite;
+}
+@keyframes heroBreath{
+  0%,100%{ filter:drop-shadow(0 0 0 rgba(34,211,238,0)); }
+  50%{ filter:drop-shadow(0 0 22px rgba(34,211,238,.14)); }
+}
+
+.magnetic{
+  transition:transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease;
+  will-change:transform;
+}
+
+.ripple{
+  position:absolute;
+  width:8px;height:8px;
+  border-radius:50%;
+  pointer-events:none;
+  background:rgba(255,255,255,.55);
+  transform:translate(-50%,-50%) scale(0);
+  animation:rippleOut .7s ease-out forwards;
+}
+@keyframes rippleOut{
+  to{transform:translate(-50%,-50%) scale(28);opacity:0}
+}
+
+[data-tilt]{ position:relative; }
+
+@media (prefers-reduced-motion: no-preference){
+  .feature-card:nth-child(1){animation-delay:.05s}
+  .feature-card:nth-child(2){animation-delay:.12s}
+  .feature-card:nth-child(3){animation-delay:.19s}
+  .feature-card:nth-child(4){animation-delay:.26s}
+}
+
+@media (max-width:700px){
+  .hero-orbit{width:270px;height:270px}
+}
+
+ 
+
+</style>
+</head>
+
+<body class="bg-[#07090e] text-slate-100 min-h-screen relative overflow-x-hidden">
+
+  <canvas id="bg-canvas"></canvas>
+
+  <div class="relative z-10 min-h-screen flex flex-col">
+
+    <!-- HEADER -->
+    <header data-tilt class="w-full max-w-6xl mx-auto px-6 py-7 flex justify-between items-center">
+
+      <div class="flex items-center gap-3">
+
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center neon-cyan">
+<span class="text-2xl">🔒</span>        </div>
+
+        <div>
+          <div class="text-xl font-extrabold tracking-tight">
+            <span class="text-cyan-400">BroDeleteThis</span>
+          </div>
+
+      
+        </div>
+
+      </div>
+
+      <div class="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+
+        <button
+          id="tab-enc" type="button"
+          class="px-5 py-2 rounded-lg text-sm font-semibold bg-cyan-500 text-slate-950 shadow-md">
+          Lock
+        </button>
+
+       <button
+    id="tab-dec"
+    class="px-5 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-white">
+    Unlock
+</button>
+
+      </div>
+
+    </header>
+
+
+    <!-- HERO -->
+    <section data-tilt class="w-full max-w-4xl mx-auto px-6 pt-8 pb-5 text-center page-animate">
+
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/20 bg-cyan-500/5 text-[10px] mono text-cyan-400 uppercase tracking-widest mb-5">
+
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+
+        Zero Login Required
+
+      </div>
+
+      <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight hero-glow" style="animation:textGlow 3s ease-in-out infinite;">
+<h1 class="text-4xl md:text-5xl font-bold tracking-widest uppercase">Your secrets just got <span class="text-cyan-400">locked</span></h1>
+      </h1>
+<p class="max-w-3xl mx-auto mt-4 text-sm md:text-base text-slate-400">
+  You’re sad, so you secretly open your Crush’s pic and stare at it for a while… basically free therapy 😭
+</p>
+      <!-- ONE LINE -->
+      <p class="max-w-3xl mx-auto mt-4 text-sm md:text-base text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis">
+        Your mom can snatch your phone, your homies can snoop through your gallery, but this vault? 
+      </p>
+      <!-- ONE LINE -->
+<p class="max-w-3xl mx-auto mt-4 text-sm md:text-base text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis">Untouchable! Anytime, anywhere.</p>
+
+      <p class="mt-3 text-xs text-slate-600 mono whitespace-nowrap">
+        No account. No drama. No "bro can I see that?"
+      </p>
+
+    </section>
+
+
+    <!-- MAIN -->
+    <main class="w-full max-w-xl mx-auto px-4 py-5 flex-1 page-animate">
+<div class="hero-orbit" aria-hidden="true"></div>
+
+
+
+      <!-- ENCRYPT PANEL -->
+      <section
+        id="panel-encrypt"
+        class="glass-panel p-7 md:p-8 rounded-3xl">
+
+        <div class="text-center mb-6">
+
+          <div class="flex justify-center mb-3">
+
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+
+              <i data-feather="shield" class="text-cyan-400"></i>
+
+            </div>
+
+          </div>
+
+          <h2 class="text-2xl font-bold">
+            Locked Vault
+          </h2>
+
+          <p class="text-xs text-slate-400 mt-1">
+            Client-side AES-256-GCM encrypted file packaging
+          </p>
+
+        </div>
+
+
+        <!-- DROP ZONE -->
+        <div
+          id="drop-zone"
+          class="border-2 border-dashed border-slate-700/80 hover:border-cyan-500/50 rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 bg-slate-900/30 group">
+
+          <input
+            type="file"
+            id="file-input"
+            class="hidden"
+          >
+
+          <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-slate-800/80 flex items-center justify-center text-slate-400 group-hover:text-cyan-400 group-hover:scale-110 transition-all">
+
+            <i data-feather="upload-cloud" class="w-6 h-6"></i>
+
+          </div>
+
+          <div id="file-details">
+
+            <p class="text-sm font-semibold text-slate-300 group-hover:text-white">
+              Drop anything here, or
+              <span class="text-cyan-400 underline">
+                browse
+              </span>
+            </p>
+
+            <p class="text-[11px] text-slate-500 mt-1">
+              Photos, videos, PDFs, ZIPs, documents & more
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- PIN -->
+        <div class="mt-6">
+
+          <label class="text-xs font-semibold text-slate-400 block mb-1.5 mono">
+            SET 6-DIGIT PIN
+          </label>
+
+          <div class="relative">
+
+            <input
+              type="password"
+              id="enc-pin"
+              maxlength="6"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              placeholder="••••••"
+              class="glass-input w-full px-4 py-3 rounded-xl outline-none mono tracking-widest text-center text-lg text-cyan-400"
+            >
+
+            <i
+              data-feather="lock"
+              class="absolute right-4 top-3.5 w-4 h-4 text-slate-500">
+            </i>
+
+          </div>
+
+        </div>
+
+
+        <!-- ENCRYPT BUTTON -->
+        <button
+          id="btn-encrypt" type="button"
+          disabled
+          class="mt-4 w-full py-4 rounded-xl font-bold text-sm uppercase tracking-wider bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg">
+
+          Lock 
+
+        </button>
+
+
+        <!-- ENCRYPT RESULT -->
+        <div
+          id="enc-result"
+          class="hidden mt-6 pt-6 border-t border-slate-800">
+
+          <div class="text-center">
+
+            <p class="text-xs text-emerald-400 mono font-semibold mb-4">
+              ✓ FILE SUCCESSFULLY LOCKED
+            </p>
+
+            <div
+              class="p-3 bg-white rounded-2xl shadow-2xl inline-flex"
+              id="qrcode-box">
+            </div>
+
+
+            <div class="mt-5">
+
+              <span class="text-[10px] mono text-slate-500 uppercase tracking-widest">
+                Secret Key
+              </span>
+
+              <div class="flex items-center justify-center gap-2 mt-1">
+
+                <span
+                  id="display-key"
+                  class="mono text-sm text-cyan-300 font-bold bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+                </span>
+
+                <button id="copy-key-btn"
+                  
+                  class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300">
+
+                  <i data-feather="copy" class="w-4 h-4"></i>
+
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <button
+              id="btn-download-vault"
+              class="mt-5 w-full py-3 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs mono font-bold tracking-wider flex items-center justify-center gap-2">
+
+              <i data-feather="download" class="w-4 h-4"></i>
+
+              DOWNLOAD .LOCK VAULT
+
+            </button>
+
+            <p class="text-[10px] text-slate-600 mono mt-3">
+              Keep your secret key safe. We can't recover it for you.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- DECRYPT PANEL -->
+      <section
+        id="panel-decrypt"
+        class="glass-panel p-7 md:p-8 rounded-3xl hidden">
+
+        <div class="text-center mb-6">
+
+          <div class="flex justify-center mb-3">
+
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+
+              <i data-feather="unlock" class="text-emerald-400"></i>
+
+            </div>
+
+          </div>
+
+          <h2 class="text-2xl font-bold">
+            Unlock The Vault
+          </h2>
+
+          <p class="text-xs text-slate-400 mt-1">
+            Secret key + PIN required
+          </p>
+
+        </div>
+
+
+        <!-- FILE STATUS -->
+        <div
+          id="payload-status"
+          class="mb-5 p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 flex items-center justify-between">
+
+          <div class="flex items-center gap-2.5 min-w-0">
+
+            <span
+              id="payload-indicator"
+              class="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0">
+            </span>
+
+            <span
+              id="payload-text"
+              class="text-xs mono text-slate-400 truncate">
+              No vault loaded
+            </span>
+
+          </div>
+
+          <button id="browse-vault-btn"
+            
+            class="text-[11px] text-cyan-400 hover:underline mono ml-3 flex-shrink-0">
+
+            Browse Vault
+
+          </button>
+
+          <input
+            type="file"
+            id="external-file-input"
+            accept=".cooked,.cypher"
+            class="hidden"
+          >
+
+        </div>
+
+
+        <!-- SECRET KEY -->
+        <div>
+
+          <div class="flex justify-between items-center mb-1">
+
+            <label class="text-xs font-semibold text-slate-400 mono">
+              16-CHARACTER SECRET KEY
+            </label>
+
+            <div class="flex items-center gap-2">
+
+              <input
+                type="file"
+                id="qr-file-input"
+                accept="image/*"
+                class="hidden"
+              >
+
+              <button id="upload-qr-btn"
+                type="button"
+                
+                class="text-[11px] text-emerald-400 hover:text-emerald-300 mono flex items-center gap-1">
+
+                <i data-feather="image" class="w-3 h-3"></i>
+
+                Upload QR
+
+              </button>
+
+              <span class="text-slate-600 text-xs">
+                |
+              </span>
+
+              <button id="scan-btn"
+                type="button"
+                
+                class="text-[11px] text-cyan-400 hover:text-cyan-300 mono flex items-center gap-1">
+
+                <i data-feather="camera" class="w-3 h-3"></i>
+
+                Scan
+
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <input
+            type="text"
+            id="dec-key"
+            maxlength="16"
+            autocomplete="off"
+            placeholder="Scan QR or paste key"
+            class="glass-input w-full px-4 py-3 rounded-xl outline-none mono text-sm text-cyan-300"
+          >
+
+        </div>
+
+
+        <!-- PIN -->
+        <div class="mt-4">
+
+          <label class="text-xs font-semibold text-slate-400 block mb-1 mono">
+            ENTER 6-DIGIT PIN
+          </label>
+
+          <input
+            type="password"
+            id="dec-pin"
+            maxlength="6"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            placeholder="••••••"
+            class="glass-input w-full px-4 py-3 rounded-xl outline-none mono tracking-widest text-center text-lg text-cyan-400"
+          >
+
+        </div>
+
+
+        <!-- DECRYPT BUTTON -->
+        <button
+          id="btn-decrypt"
+          
+          class="mt-4 w-full py-4 rounded-xl font-bold text-sm uppercase tracking-wider bg-gradient-to-r from-teal-400 to-indigo-600 hover:from-teal-300 hover:to-indigo-500 text-slate-950 transition-all shadow-lg">
+
+          Unlock
+
+        </button>
+
+
+        <!-- CAMERA -->
+        <div
+          id="scanner-container"
+          class="hidden mt-5 rounded-2xl overflow-hidden border border-cyan-500/40 relative">
+
+          <div
+            id="interactive-scanner"
+            class="w-full bg-black">
+          </div>
+
+          <button id="close-scanner-btn"
+            
+            class="absolute top-3 right-3 bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-lg text-xs font-bold">
+
+            Close
+
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- FEATURES -->
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
+
+        <div class="glass-panel rounded-2xl p-4 text-center">
+
+          <i
+            data-feather="user-x"
+            class="w-5 h-5 mx-auto text-cyan-400 mb-2">
+          </i>
+
+          <p class="text-xs font-bold">
+            Zero Login
+          </p>
+
+          <p class="text-[10px] text-slate-500 mt-1">
+            No account required.
+          </p>
+
+        </div>
+
+
+        <div class="glass-panel rounded-2xl p-4 text-center">
+
+          <i
+            data-feather="lock"
+            class="w-5 h-5 mx-auto text-indigo-400 mb-2">
+          </i>
+
+          <p class="text-xs font-bold">
+            Fully Locked
+          </p>
+
+          <p class="text-[10px] text-slate-500 mt-1">
+            AES-256-GCM encryption.
+          </p>
+
+        </div>
+
+
+        <div class="glass-panel rounded-2xl p-4 text-center">
+
+          <i
+            data-feather="eye-off"
+            class="w-5 h-5 mx-auto text-emerald-400 mb-2">
+          </i>
+
+          <p class="text-xs font-bold">
+            No Snooping
+          </p>
+
+          <p class="text-[10px] text-slate-500 mt-1">
+            Your files stay encrypted.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <!-- PICKUP LINE COPY -->
+      <div class="text-center mt-7 px-4">
+
+        <p class="text-xs text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis">
+          Your files deserve better than your gallery. 😏
+        </p>
+
+        <p class="text-xs text-slate-400 mt-2 whitespace-nowrap overflow-hidden text-ellipsis">
+          Got files? I got the vault. 😉
+        </p>
+
+        <p class="text-xs text-slate-400 mt-2 whitespace-nowrap overflow-hidden text-ellipsis">
+          Keep it locked, keep it cute, keep it CookedDrive. 🔐
+        </p>
+
+        <p class="text-xs text-slate-600 mt-5 mono whitespace-nowrap">
+          Zero login required.
+        </p>
+
+        <p class="text-[10px] text-slate-600 mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
+          We don't ask for your phone number, your mother's maiden name, or your email.
+        </p>
+
+        <p class="text-[10px] text-cyan-500/60 mono mt-2 whitespace-nowrap">
+          Tap in // Lock it // Disappear
+        </p>
+
+      </div>
+
+    </main>
+
+
+    </footer>
+
+  </div>
+
+
+
+  <!-- SECRET KEY COPY CAUTION MODAL -->
+  <div id="copy-modal-backdrop" class="copy-modal-backdrop" aria-hidden="true">
+    <div
+      id="copy-modal"
+      class="copy-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="copy-modal-title"
+    >
+      <div class="copy-modal-header">
+        <h2 id="copy-modal-title" class="copy-modal-title">Caution</h2>
+        <button id="copy-modal-close" class="copy-modal-close" type="button" aria-label="Close">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <div class="copy-modal-body">
+        <div class="copy-modal-icon" aria-hidden="true">
+          <div class="copy-modal-lock"></div>
+        </div>
+        <div id="copy-modal-message" class="copy-modal-message">
+          Secret key copied. Don't lose it bro.
+        </div>
+      </div>
+
+      <div class="copy-modal-footer">
+        <button id="copy-modal-ok" class="copy-modal-ok" type="button" data-magnetic>OK</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+
+/* =========================================
+   ICONS
+========================================= */
+
+feather.replace();
+
+
+/* =========================================
+   BACKGROUND PARTICLES
+========================================= */
+
+const canvas =
+  document.getElementById("bg-canvas");
+
+const ctx =
+  canvas.getContext("2d");
+
+let particles = [];
+
+
+function resizeCanvas() {
+
+  canvas.width =
+    window.innerWidth;
+
+  canvas.height =
+    window.innerHeight;
+
+}
+
+
+window.addEventListener(
+  "resize",
+  resizeCanvas
+);
+
+resizeCanvas();
+
+
+class Particle {
+
+  constructor() {
+    this.reset();
+  }
+
+  reset() {
+
+    this.x =
+      Math.random() * canvas.width;
+
+    this.y =
+      Math.random() * canvas.height;
+
+    this.size =
+      Math.random() * 1.5 + 0.5;
+
+    this.vx =
+      (Math.random() - 0.5) * 0.4;
+
+    this.vy =
+      (Math.random() - 0.5) * 0.4;
+
+    this.alpha =
+      Math.random() * 0.5 + 0.1;
+
+  }
+
+  update() {
+
+    this.x += this.vx;
+    this.y += this.vy;
+
+    if (
+      this.x < 0 ||
+      this.x > canvas.width ||
+      this.y < 0 ||
+      this.y > canvas.height
+    ) {
+
+      this.reset();
+
+    }
+
+  }
+
+  draw() {
+
+    ctx.fillStyle =
+      `rgba(6,182,212,${this.alpha})`;
+
+    ctx.fillRect(
+      this.x,
+      this.y,
+      this.size,
+      this.size
+    );
+
+  }
+
+}
+
+
+for (
+  let i = 0;
+  i < 90;
+  i++
+) {
+
+  particles.push(
+    new Particle()
+  );
+
+}
+
+
+function renderParticles() {
+
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  particles.forEach(p => {
+
+    p.update();
+    p.draw();
+
+  });
+
+  requestAnimationFrame(
+    renderParticles
+  );
+
+}
+
+
+renderParticles();
+
+
+/* =========================================
+   CRYPTOGRAPHY
+========================================= */
+
+const CHAR_SET =
+  "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*";
+
+
+function generateSecretKey(length = 16) {
+
+  const randomValues =
+    new Uint32Array(length);
+
+  window.crypto.getRandomValues(
+    randomValues
+  );
+
+  return Array.from(
+    randomValues,
+    n =>
+      CHAR_SET[
+        n % CHAR_SET.length
+      ]
+  ).join("");
+
+}
+
+
+async function deriveKey(
+  combinedPassphrase,
+  salt
+) {
+
+  const enc =
+    new TextEncoder();
+
+  const baseKey =
+    await window.crypto.subtle.importKey(
+      "raw",
+      enc.encode(
+        combinedPassphrase
+      ),
+      "PBKDF2",
+      false,
+      ["deriveKey"]
+    );
+
+  return window.crypto.subtle.deriveKey(
+
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 150000,
+      hash: "SHA-256"
+    },
+
+    baseKey,
+
+    {
+      name: "AES-GCM",
+      length: 256
+    },
+
+    false,
+
+    [
+      "encrypt",
+      "decrypt"
+    ]
+
+  );
+
+}
+
+
+/* =========================================
+   GLOBAL STATE
+========================================= */
+
+let targetFile = null;
+let encryptedBlob = null;
+
+
+/* =========================================
+   FILE SELECTION
+========================================= */
+
+const dropZone =
+  document.getElementById(
+    "drop-zone"
+  );
+
+const fileInput =
+  document.getElementById(
+    "file-input"
+  );
+
+const encPinInput =
+  document.getElementById(
+    "enc-pin"
+  );
+
+const btnEncrypt =
+  document.getElementById(
+    "btn-encrypt"
+  );
+
+
+dropZone.onclick = () =>
+  fileInput.click();
+
+
+fileInput.onchange = e =>
+  handleFileSelection(
+    e.target.files[0]
+  );
+
+
+dropZone.ondragover = e => {
+
+  e.preventDefault();
+
+  dropZone.classList.add(
+    "drop-active"
+  );
+
+};
+
+
+dropZone.ondragleave = () => {
+
+  dropZone.classList.remove(
+    "drop-active"
+  );
+
+};
+
+
+dropZone.ondrop = e => {
+
+  e.preventDefault();
+
+  dropZone.classList.remove(
+    "drop-active"
+  );
+
+  if (
+    e.dataTransfer.files.length
+  ) {
+
+    handleFileSelection(
+      e.dataTransfer.files[0]
+    );
+
+  }
+
+};
+
+
+function escapeHTML(value) {
+
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+function handleFileSelection(file) {
+
+  if (!file) return;
+
+  targetFile = file;
+
+  document.getElementById(
+    "file-details"
+  ).innerHTML = `
+
+    <span class="text-emerald-400 font-mono font-bold text-sm">
+      ${escapeHTML(file.name)}
+    </span>
+
+    <span class="block text-[11px] text-slate-400">
+      ${(file.size / (1024 * 1024)).toFixed(2)} MB
+    </span>
+
+  `;
+
+  validateEncInputs();
+
+}
+
+
+encPinInput.addEventListener(
+  "input",
+  validateEncInputs
+);
+
+
+function validateEncInputs() {
+
+  btnEncrypt.disabled =
+    !(
+      targetFile &&
+      /^\d{6}$/.test(
+        encPinInput.value
+      )
+    );
+
+}
+
+
+/* =========================================
+   ENCRYPTION
+========================================= */
+
+async function processEncryption() {
+
+  btnEncrypt.innerText =
+    "COOKING ENCRYPTION...";
+
+  btnEncrypt.disabled = true;
+
+  try {
+
+    const pin =
+      encPinInput.value;
+
+    const secretKey =
+      generateSecretKey(16);
+
+    const combined =
+      secretKey + pin;
+
+
+    const salt =
+      window.crypto.getRandomValues(
+        new Uint8Array(16)
+      );
+
+    const iv =
+      window.crypto.getRandomValues(
+        new Uint8Array(12)
+      );
+
+
+    const fileBuffer =
+      await targetFile.arrayBuffer();
+
+
+    const derivedKey =
+      await deriveKey(
+        combined,
+        salt
+      );
+
+
+    const ciphertextBuffer =
+      await window.crypto.subtle.encrypt(
+
+        {
+          name: "AES-GCM",
+          iv: iv
+        },
+
+        derivedKey,
+
+        fileBuffer
+
+      );
+
+
+    const meta =
+      JSON.stringify({
+
+        name:
+          targetFile.name,
+
+        type:
+          targetFile.type
+
+      });
+
+
+    const metaEncoded =
+      new TextEncoder().encode(
+        meta
+      );
+
+
+    const metaLength =
+      new Uint8Array(
+        new Uint32Array([
+          metaEncoded.byteLength
+        ]).buffer
+      );
+
+
+    encryptedBlob =
+      new Blob(
+
+        [
+          metaLength,
+          metaEncoded,
+          salt,
+          iv,
+          ciphertextBuffer
+        ],
+
+        {
+          type:
+            "application/octet-stream"
+        }
+
+      );
+
+
+    updatePayloadStatus(
+      targetFile.name
+    );
+
+
+    document.getElementById(
+      "display-key"
+    ).innerText =
+      secretKey;
+
+
+    const qrContainer =
+      document.getElementById(
+        "qrcode-box"
+      );
+
+
+    qrContainer.innerHTML = "";
+
+
+    new QRCode(
+
+      qrContainer,
+
+      {
+        text: secretKey,
+        width: 140,
+        height: 140,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel:
+          QRCode.CorrectLevel.H
+      }
+
+    );
+
+
+    document.getElementById(
+      "enc-result"
+    ).classList.remove(
+      "hidden"
+    );
+
+
+    document.getElementById(
+      "btn-download-vault"
+    ).onclick = () => {
+
+      const url =
+        URL.createObjectURL(
+          encryptedBlob
+        );
+
+      const link =
+        document.createElement(
+          "a"
+        );
+
+      link.href = url;
+
+      link.download =
+        `${targetFile.name}.locked`;
+
+      link.click();
+
+      setTimeout(
+        () =>
+          URL.revokeObjectURL(url),
+        1000
+      );
+
+    };
+
+btnEncrypt.innerText =
+  "✓ LOCKED SUCCESSFULLY";
+
+// LOCK SUCCESS ANIMATION
+btnEncrypt.classList.remove("locking");
+void btnEncrypt.offsetWidth;
+btnEncrypt.classList.add("locking");
+
+setTimeout(() => {
+  btnEncrypt.classList.remove("locking");
+}, 800);
+
+feather.replace();
+
+  }
+
+  catch (error) {
+
+    console.error(error);
+
+    alert(
+      "Encryption failed: " +
+      error.message
+    );
+
+    btnEncrypt.disabled =
+      false;
+
+    btnEncrypt.innerText =
+      "LOCK";
+
+  }
+
+}
+
+
+/* =========================================
+   PAYLOAD STATUS
+========================================= */
+
+function updatePayloadStatus(
+  filename
+) {
+
+  const indicator =
+    document.getElementById(
+      "payload-indicator"
+    );
+
+  const text =
+    document.getElementById(
+      "payload-text"
+    );
+
+
+  indicator.className =
+    "w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0";
+
+
+  text.textContent =
+    `Ready: ${filename}`;
+
+  text.className =
+    "text-xs mono text-emerald-300 truncate";
+
+
+}
+
+
+/* =========================================
+   DECRYPTION
+========================================= */
+
+const keyInputDec =
+  document.getElementById(
+    "dec-key"
+  );
+
+const pinInputDec =
+  document.getElementById(
+    "dec-pin"
+  );
+
+const externalFileInput =
+  document.getElementById(
+    "external-file-input"
+  );
+
+
+externalFileInput.addEventListener(
+  "change",
+  e => {
+
+    if (
+      e.target.files.length
+    ) {
+
+      encryptedBlob =
+        e.target.files[0];
+
+      updatePayloadStatus(
+        encryptedBlob.name
+      );
+
+    }
+
+  }
+);
+
+
+async function processDecryption() {
+
+  const key =
+    keyInputDec.value.trim();
+
+  const pin =
+    pinInputDec.value.trim();
+
+if (!encryptedBlob) {
+  return showCopyModal("No vault loaded. Choose a .locked file first.");
+}
+
+
+  if (key.length !== 16) {
+
+    return alert(
+      "Provide a valid 16-character secret key."
+    );
+
+  }
+
+
+  if (!/^\d{6}$/.test(pin)) {
+
+    return alert(
+      "Provide your 6-digit PIN."
+    );
+
+  }
+
+
+  try {
+
+    const arrayBuffer =
+      await encryptedBlob.arrayBuffer();
+
+
+    if (arrayBuffer.byteLength < 32) {
+      throw new Error(
+        "Invalid vault"
+      );
+    }
+
+
+    const metaLength =
+      new Uint32Array(
+        arrayBuffer.slice(
+          0,
+          4
+        )
+      )[0];
+
+
+    if (
+      metaLength <= 0 ||
+      metaLength >
+        arrayBuffer.byteLength
+    ) {
+
+      throw new Error(
+        "Invalid metadata"
+      );
+
+    }
+
+
+    const metaBytes =
+      new Uint8Array(
+        arrayBuffer.slice(
+          4,
+          4 + metaLength
+        )
+      );
+
+
+    const meta =
+      JSON.parse(
+        new TextDecoder().decode(
+          metaBytes
+        )
+      );
+
+
+    const offsetSalt =
+      4 + metaLength;
+
+
+    const salt =
+      new Uint8Array(
+        arrayBuffer.slice(
+          offsetSalt,
+          offsetSalt + 16
+        )
+      );
+
+
+    const iv =
+      new Uint8Array(
+        arrayBuffer.slice(
+          offsetSalt + 16,
+          offsetSalt + 28
+        )
+      );
+
+
+    const cipherData =
+      arrayBuffer.slice(
+        offsetSalt + 28
+      );
+
+
+    const derivedKey =
+      await deriveKey(
+        key + pin,
+        salt
+      );
+
+
+    const decryptedBuffer =
+      await window.crypto.subtle.decrypt(
+
+        {
+          name: "AES-GCM",
+          iv: iv
+        },
+
+        derivedKey,
+
+        cipherData
+
+      );
+
+
+    const recoveredBlob =
+      new Blob(
+        [decryptedBuffer],
+        {
+          type:
+            meta.type ||
+            "application/octet-stream"
+        }
+      );
+
+
+    const url =
+      URL.createObjectURL(
+        recoveredBlob
+      );
+
+
+window.location.href = url;
+
+    setTimeout(
+      () =>
+        URL.revokeObjectURL(url),
+      1000
+    );
+
+showCopyModal("🔓 File unlocked.");
+
+}
+
+catch (error) {
+
+  console.error(error);
+
+  showCopyModal("Vault rejected you. Incorrect secret key or PIN.");
+
+}
+}
+
+/* =========================================
+   QR CAMERA
+========================================= */
+
+let qrScanner = null;
+
+
+const qrFileInput =
+  document.getElementById(
+    "qr-file-input"
+  );
+
+
+function startCamera() {
+
+  const container =
+    document.getElementById(
+      "scanner-container"
+    );
+
+
+  container.classList.remove(
+    "hidden"
+  );
+
+
+  qrScanner =
+    new Html5Qrcode(
+      "interactive-scanner"
+    );
+
+
+  qrScanner.start(
+
+    {
+      facingMode:
+        "environment"
+    },
+
+    {
+      fps: 15,
+
+      qrbox: {
+        width: 220,
+        height: 220
+      }
+
+    },
+
+    decodedText => {
+
+      keyInputDec.value =
+        decodedText.trim();
+
+      stopCamera();
+
+    },
+
+    () => {}
+
+  ).catch(error => {
+
+    console.error(error);
+
+    alert(
+      "Camera access denied or unavailable."
+    );
+
+    container.classList.add(
+      "hidden"
+    );
+
+    qrScanner = null;
+
+  });
+
+}
+
+
+function stopCamera() {
+
+  if (!qrScanner) {
+
+    document
+      .getElementById(
+        "scanner-container"
+      )
+      .classList.add(
+        "hidden"
+      );
+
+    return;
+
+  }
+
+
+  qrScanner
+    .stop()
+    .then(() => {
+
+      document
+        .getElementById(
+          "scanner-container"
+        )
+        .classList.add(
+          "hidden"
+        );
+
+      qrScanner = null;
+
+    })
+    .catch(() => {
+
+      document
+        .getElementById(
+          "scanner-container"
+        )
+        .classList.add(
+          "hidden"
+        );
+
+      qrScanner = null;
+
+    });
+
+}
+
+
+/* =========================================
+   QR IMAGE
+========================================= */
+
+qrFileInput.addEventListener(
+  "change",
+  async e => {
+
+    const file =
+      e.target.files[0];
+
+    if (!file) return;
+
+
+    const scanner =
+      new Html5Qrcode(
+        "interactive-scanner"
+      );
+
+
+    try {
+
+      const result =
+        await scanner.scanFileV2(
+          file,
+          true
+        );
+
+
+      keyInputDec.value =
+        result.decodedText.trim();
+
+    }
+
+    catch {
+
+      alert(
+        "No clear QR code detected."
+      );
+
+    }
+
+    finally {
+
+      qrFileInput.value =
+        "";
+
+    }
+
+  }
+);
+
+
+/* =========================================
+   MODE SWITCH
+========================================= */
+
+function switchMode(mode) {
+  const encryptPanel = document.getElementById("panel-encrypt");
+  const decryptPanel = document.getElementById("panel-decrypt");
+  const encTab = document.getElementById("tab-enc");
+  const decTab = document.getElementById("tab-dec");
+
+  if (mode === "decrypt") {
+    encryptPanel.classList.add("hidden");
+    decryptPanel.classList.remove("hidden");
+    decTab.classList.add("bg-cyan-500", "text-slate-950", "shadow-md");
+    decTab.classList.remove("text-slate-400");
+    encTab.classList.remove("bg-cyan-500", "text-slate-950", "shadow-md");
+    encTab.classList.add("text-slate-400");
+  } else {
+    decryptPanel.classList.add("hidden");
+    encryptPanel.classList.remove("hidden");
+    encTab.classList.add("bg-cyan-500", "text-slate-950", "shadow-md");
+    encTab.classList.remove("text-slate-400");
+    decTab.classList.remove("bg-cyan-500", "text-slate-950", "shadow-md");
+    decTab.classList.add("text-slate-400");
+  }
+
+  if (typeof feather !== "undefined") feather.replace();
+}
+
+
+/* =========================================
+   TAB BUTTON EVENTS
+========================================= */
+
+document.getElementById("tab-enc").addEventListener("click", () => {
+  switchMode("encrypt");
+});
+
+document.getElementById("tab-dec").addEventListener("click", () => {
+  switchMode("decrypt");
+});
+
+
+/* =========================================
+   COPY SECRET KEY
+========================================= */
+
+/* =========================================
+   COPY SECRET KEY
+========================================= */
+
+
+/* =========================================
+   SECRET KEY COPY MODAL
+========================================= */
+
+const copyModalBackdrop = document.getElementById("copy-modal-backdrop");
+const copyModalMessage = document.getElementById("copy-modal-message");
+const copyModalOk = document.getElementById("copy-modal-ok");
+const copyModalClose = document.getElementById("copy-modal-close");
+
+function showCopyModal(message) {
+  copyModalMessage.textContent = message;
+  copyModalBackdrop.classList.add("show");
+  copyModalBackdrop.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+
+  if (typeof feather !== "undefined") feather.replace();
+
+  requestAnimationFrame(() => copyModalOk.focus());
+}
+
+function hideCopyModal() {
+  copyModalBackdrop.classList.remove("show");
+  copyModalBackdrop.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
+
+copyModalOk?.addEventListener("click", hideCopyModal);
+copyModalClose?.addEventListener("click", hideCopyModal);
+
+copyModalBackdrop?.addEventListener("click", (e) => {
+  if (e.target === copyModalBackdrop) hideCopyModal();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && copyModalBackdrop?.classList.contains("show")) {
+    hideCopyModal();
+  }
+});
+
+function copySecretKey() {
+
+  const key =
+    document.getElementById(
+      "display-key"
+    ).innerText;
+
+
+  navigator.clipboard
+    .writeText(key)
+    .then(() => {
+
+      showCopyModal("Secret key copied. Don't lose it bro.");
+
+    })
+    .catch(() => {
+
+      alert(
+        "Couldn't copy the key."
+      );
+
+    });
+
+}
+
+// CSP-safe event handlers
+document.getElementById("btn-encrypt")?.addEventListener("click", processEncryption);
+document.getElementById("btn-decrypt")?.addEventListener("click", processDecryption);
+document.getElementById("copy-key-btn")?.addEventListener("click", copySecretKey);
+document.getElementById("browse-vault-btn")?.addEventListener("click", () => {
+  document.getElementById("external-file-input").click();
+});
+document.getElementById("upload-qr-btn")?.addEventListener("click", () => {
+  document.getElementById("qr-file-input").click();
+});
+document.getElementById("scan-btn")?.addEventListener("click", startCamera);
+document.getElementById("close-scanner-btn")?.addEventListener("click", stopCamera);
+
+</script>
+
+
+<script>
+(() => {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return;
+
+  // Global cursor light.
+  let raf = 0;
+  window.addEventListener('pointermove', (e) => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      document.documentElement.style.setProperty('--mx', `${e.clientX}px`);
+      document.documentElement.style.setProperty('--my', `${e.clientY}px`);
+    });
+  }, {passive:true});
+
+  // 3D tilt for major surfaces.
+  document.querySelectorAll('[data-tilt]').forEach(el => {
+    el.addEventListener('pointermove', e => {
+      const r = el.getBoundingClientRect();
+      const x = (e.clientX-r.left)/r.width - .5;
+      const y = (e.clientY-r.top)/r.height - .5;
+      el.style.transform = `perspective(1100px) rotateX(${(-y*3).toFixed(2)}deg) rotateY(${(x*4).toFixed(2)}deg)`;
+    });
+    el.addEventListener('pointerleave', () => {
+      el.style.transform = '';
+    });
+  });
+
+  // Magnetic buttons.
+  document.querySelectorAll('[data-magnetic]').forEach(btn => {
+    btn.classList.add('magnetic');
+    btn.addEventListener('pointermove', e => {
+      const r = btn.getBoundingClientRect();
+      const x = e.clientX-r.left-r.width/2;
+      const y = e.clientY-r.top-r.height/2;
+      btn.style.transform = `translate(${(x*.10).toFixed(1)}px, ${(y*.10).toFixed(1)}px)`;
+    });
+    btn.addEventListener('pointerleave', () => btn.style.transform = '');
+    btn.addEventListener('click', e => {
+      const r = btn.getBoundingClientRect();
+      const dot = document.createElement('span');
+      dot.className = 'ripple';
+      dot.style.left = `${e.clientX-r.left}px`;
+      dot.style.top = `${e.clientY-r.top}px`;
+      btn.style.position = 'relative';
+      btn.appendChild(dot);
+      setTimeout(() => dot.remove(), 750);
+    });
+  });
+
+  // Give feature cards a subtle depth response.
+  document.querySelectorAll('.feature-card, .glass-panel').forEach(el => {
+    el.addEventListener('pointermove', e => {
+      const r = el.getBoundingClientRect();
+      const x = (e.clientX-r.left)/r.width-.5;
+      const y = (e.clientY-r.top)/r.height-.5;
+      el.style.transform = `perspective(900px) rotateX(${(-y*2).toFixed(2)}deg) rotateY(${(x*2.5).toFixed(2)}deg) translateY(-4px)`;
+    });
+    el.addEventListener('pointerleave', () => el.style.transform = '');
+  });
+  /* ===== FAST CUSTOM KEY CURSOR ===== */
+if (window.matchMedia("(pointer: fine)").matches) {
+  const keyCursor = document.createElement("div");
+
+  keyCursor.className = "key-cursor";
+  keyCursor.textContent = "🔑";
+  keyCursor.setAttribute("aria-hidden", "true");
+
+  document.body.appendChild(keyCursor);
+
+  document.addEventListener("pointermove", (e) => {
+    keyCursor.style.transform =
+      `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
+  }, { passive: true });
+
+  document.addEventListener("pointerdown", () => {
+    keyCursor.classList.remove("click");
+
+    requestAnimationFrame(() => {
+      keyCursor.classList.add("click");
+    });
+  }, { passive: true });
+
+  keyCursor.addEventListener("animationend", () => {
+    keyCursor.classList.remove("click");
+  });
+}
+})();
+</script>
+
+</body>
+</html>

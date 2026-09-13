@@ -1,0 +1,61 @@
+.copy-toast {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    z-index: 99999;
+
+    padding: 14px 20px;
+    border: 1px solid rgba(34, 211, 238, 0.35);
+    border-radius: 14px;
+
+    background: rgba(15, 23, 42, 0.95);
+    color: #67e8f9;
+
+    font-family: "Fira Code", monospace;
+    font-size: 13px;
+
+    box-shadow:
+        0 10px 35px rgba(0, 0, 0, 0.5),
+        0 0 25px rgba(6, 182, 212, 0.2);
+
+    animation: copyToastIn 0.45s ease forwards;
+}
+
+.copy-toast.hide {
+    animation: copyToastOut 0.35s ease forwards;
+}
+
+@keyframes copyToastIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes copyToastOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-15px) scale(0.95);
+    }
+}
+.error-shake {
+  animation: errorShake .45s ease;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  60% { transform: translateX(-7px); }
+  80% { transform: translateX(7px); }
+}
