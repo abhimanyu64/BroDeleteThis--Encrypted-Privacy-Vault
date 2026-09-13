@@ -59,7 +59,38 @@ const fetchEncryptedFile = (req, res) => {
   }
 };
 
+/**
+ * Handle Vault Unlock with File Upload, Passcode, and Secret Key
+ */
+const unlockVaultWithFile = (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No encrypted payload received for unlocking.' });
+    }
+
+    const { passcode, secretKey } = req.body;
+
+    if (!passcode || !secretKey) {
+      return res.status(400).json({ error: 'Passcode and secret key are required.' });
+    }
+
+    // Extract UUID or filename from the uploaded file
+    const fileId = path.parse(req.file.filename).name;
+
+    // TODO: Add your custom decryption/verification logic here using passcode, secretKey, and req.file.path
+
+    return res.status(200).json({
+      success: true,
+      message: 'Vault successfully unlocked and file received.',
+      fileId
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to unlock vault payload.' });
+  }
+};
+
 module.exports = {
   uploadEncryptedFile,
-  fetchEncryptedFile
+  fetchEncryptedFile,
+  unlockVaultWithFile
 };

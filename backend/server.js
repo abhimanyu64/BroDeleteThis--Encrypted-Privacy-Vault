@@ -43,8 +43,7 @@ app.use(
         ],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "blob:"],
-        connectSrc: ["'self'", `http://localhost:${PORT}`]
-      }
+        connectSrc: ["'self'", `http://localhost:${PORT}`, "https://brodeletethisproject.vercel.app"]      }
     },
     crossOriginEmbedderPolicy: false
   })
